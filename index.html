@@ -41,6 +41,7 @@ body{
   color:var(--paper);
   font-family:"IBM Plex Sans Arabic","Tahoma",sans-serif;
   min-height:100vh;
+  overflow-x:hidden;
   -webkit-tap-highlight-color:transparent;
 }
 button,input,select,textarea{font-family:inherit;color:inherit;}
@@ -96,6 +97,8 @@ a{color:var(--gold);}
 }
 .stat-chip:hover{transform:translateY(-1px); border-color:var(--fog-dim);}
 .stat-chip.active{border-color:var(--gold); background:var(--gold-dim);}
+.stat-chip.overdue-chip{border-color:var(--ember);}
+.stat-chip.overdue-chip b{color:var(--ember);}
 .stat-chip b{font-family:"IBM Plex Mono",monospace; font-size:15px; color:var(--gold);}
 .stat-chip span{font-size:12px; color:var(--fog);}
 
@@ -129,10 +132,14 @@ a{color:var(--gold);}
 .filters{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
 .select-box, .search-box{
   background:var(--ink-3); border:1px solid var(--line); color:var(--paper);
-  border-radius:var(--radius-sm); padding:8px 12px; font-size:13.5px;
+  border-radius:var(--radius-sm); padding:10px 12px; font-size:16px; min-width:0;
 }
 .search-box{flex:1; min-width:160px;}
 .search-box::placeholder{color:var(--fog-dim);}
+@media (max-width:560px){
+  .filters{flex-direction:column; align-items:stretch;}
+  .filters > *{width:100%;}
+}
 .icon-btn{
   background:var(--ink-3); border:1px solid var(--line); border-radius:var(--radius-sm);
   width:36px;height:36px; display:flex; align-items:center; justify-content:center;
@@ -201,6 +208,8 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 .tag.status-draft{color:var(--fog); border-color:var(--line);}
 .tag.status-scheduled{color:#1a1404; background:var(--gold); border-color:var(--gold);}
 .tag.status-published{color:#062318; background:var(--mint); border-color:var(--mint);}
+.tag.status-overdue{color:#2a0f0a; background:var(--ember); border-color:var(--ember); font-weight:700; animation:overdue-pulse 1.8s ease-in-out infinite;}
+@keyframes overdue-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,91,54,.45);}50%{box-shadow:0 0 0 4px rgba(255,91,54,0);}}
 
 .slate-title{font-size:15.5px; font-weight:700; color:var(--paper); margin:0; line-height:1.4;}
 .slate-excerpt{
@@ -211,12 +220,15 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
   margin-top:auto; display:flex; align-items:center; justify-content:space-between;
   padding-top:10px; border-top:1px solid var(--line); gap:8px;
 }
+.date-stack{display:flex; flex-direction:column; gap:4px; min-width:0;}
 .date-chip{font-size:12px; color:var(--gold); display:flex; align-items:center; gap:5px;}
 .date-chip.no-date{color:var(--fog-dim);}
-.card-actions{display:flex; gap:6px;}
+.date-chip.overdue{color:var(--ember); font-weight:700;}
+.date-chip.shoot{color:#a48cff;}
+.card-actions{display:flex; gap:4px;}
 .card-actions button{
-  background:transparent; border:none; color:var(--fog); cursor:pointer; font-size:15px;
-  width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center;
+  background:transparent; border:none; color:var(--fog); cursor:pointer; font-size:16px;
+  width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center;
 }
 .card-actions button:hover{background:var(--ink-4); color:var(--paper);}
 
@@ -250,10 +262,22 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
 .cal-head .month-label{font-family:"Lalezar"; font-size:19px; color:var(--gold);}
 .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
-.cal-dow{text-align:center; font-size:11.5px; color:var(--fog-dim); padding-bottom:4px;}
+.cal-dow{
+  text-align:center; font-size:11.5px; color:var(--fog-dim); padding-bottom:4px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 .cal-cell{
   background:var(--ink-3); border:1px solid var(--line); border-radius:9px; min-height:78px;
   padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:border-color .15s;
+  position:relative;
+}
+.cal-shoot-flag{position:absolute; top:4px; inset-inline-end:4px; font-size:11px; line-height:1;}
+@media (max-width:480px){
+  .cal-grid{gap:3px;}
+  .cal-cell{min-height:46px; padding:4px;}
+  .cal-dow{font-size:9.5px;}
+  .cal-daynum{font-size:10.5px;}
+  .cal-dot{width:5px; height:5px;}
 }
 .cal-cell:hover{border-color:var(--fog-dim);}
 .cal-cell.empty{background:transparent; border-color:transparent; cursor:default;}
@@ -302,14 +326,17 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 .modal-strip{height:9px; background:repeating-linear-gradient(135deg,var(--ember) 0 9px, var(--gold) 9px 18px); border-radius:18px 18px 0 0;}
 .modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 18px 0;}
 .modal-head h3{margin:0; font-size:17px; font-family:"Lalezar"; color:var(--paper); letter-spacing:.3px;}
-.modal-close{background:none; border:none; color:var(--fog); font-size:20px; cursor:pointer; padding:4px 8px;}
+.modal-close{
+  background:none; border:none; color:var(--fog); font-size:22px; cursor:pointer;
+  width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+}
 .modal-close:hover{color:var(--paper);}
 
 .modal-form{padding:14px 18px 20px; display:flex; flex-direction:column; gap:16px;}
 .field label{display:block; font-size:12.5px; color:var(--fog); margin-bottom:7px; font-weight:600;}
 .field input[type=text],.field input[type=datetime-local],.field textarea{
   width:100%; background:var(--ink-3); border:1px solid var(--line); color:var(--paper);
-  border-radius:10px; padding:10px 12px; font-size:14px; resize:vertical;
+  border-radius:10px; padding:11px 12px; font-size:16px; resize:vertical;
 }
 .field textarea{min-height:78px; line-height:1.6;}
 .field input::placeholder, .field textarea::placeholder{color:var(--fog-dim);}
@@ -317,10 +344,10 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 .error-msg{color:#ff7a6b; font-size:11.5px; margin-top:5px; display:none;}
 .error-msg.show{display:block;}
 
-.chip-group{display:flex; gap:7px; flex-wrap:wrap;}
+.chip-group{display:flex; gap:8px; flex-wrap:wrap;}
 .chip{
   border:1px solid var(--line); background:var(--ink-3); color:var(--fog);
-  border-radius:999px; padding:7px 13px; font-size:12.5px; cursor:pointer;
+  border-radius:999px; padding:9px 15px; font-size:13.5px; cursor:pointer;
   display:inline-flex; align-items:center; gap:5px; transition:all .15s;
 }
 .chip.active{background:var(--ember); color:#1a0d06; border-color:var(--ember); font-weight:600;}
@@ -335,7 +362,9 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 .view-modal{max-width:600px;}
 .view-body{padding:6px 20px 4px;}
 .view-title{font-size:21px; font-weight:700; color:var(--paper); margin:4px 0 10px; line-height:1.45;}
-.view-date{font-family:"IBM Plex Mono",monospace; font-size:13.5px; color:var(--gold); margin-bottom:18px; display:flex; align-items:center; gap:6px;}
+.view-date{font-family:"IBM Plex Mono",monospace; font-size:13.5px; color:var(--gold); margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+.view-date.overdue{color:var(--ember); font-weight:700;}
+.view-date:last-of-type{margin-bottom:18px;}
 .view-date.no-date{color:var(--fog-dim);}
 .view-section{margin-bottom:16px;}
 .view-label{font-size:12px; color:var(--fog); font-weight:600; margin-bottom:8px; letter-spacing:.2px;}
@@ -398,12 +427,13 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 .toast-container{
   position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:90;
   display:flex; flex-direction:column; gap:8px; align-items:center;
-  padding-top:env(safe-area-inset-top,0);
+  padding-top:env(safe-area-inset-top,0); width:100%; max-width:420px; padding-inline:14px;
 }
 .toast{
   background:var(--ink-3); border:1px solid var(--line); color:var(--paper);
   padding:10px 18px; border-radius:999px; font-size:13px; box-shadow:var(--shadow-pop);
   display:flex; align-items:center; gap:8px; animation:toast-in .25s ease;
+  max-width:100%; white-space:normal; text-align:center; word-break:break-word;
 }
 .toast.success{border-color:var(--mint); color:var(--mint);}
 .toast.error{border-color:var(--ember); color:#ff8a6b;}
@@ -460,6 +490,7 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
       <option value="draft">مسودة</option>
       <option value="scheduled">مجدول</option>
       <option value="published">تم النشر</option>
+      <option value="overdue">⚠️ متأخر</option>
     </select>
     <select class="select-box" id="sortFilter">
       <option value="date-asc">الأقرب موعدًا أولًا</option>
@@ -508,8 +539,13 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
         </div>
       </div>
 
+      <div class="field" id="shootDateField" style="display:none;">
+        <label for="shootDateInput">🎬 موعد التصوير</label>
+        <input type="datetime-local" id="shootDateInput">
+      </div>
+
       <div class="field">
-        <label for="dateInput">موعد النشر</label>
+        <label for="dateInput">📅 موعد النشر</label>
         <input type="datetime-local" id="dateInput">
       </div>
 
@@ -591,6 +627,39 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
 
 <div class="toast-container" id="toastContainer"></div>
 
+<script>
+  if(!window.__firebaseReadyPromise){
+    window.__firebaseReadyPromise = new Promise(function(resolve){ window.__firebaseReadyResolve = resolve; });
+  }
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHVVs7GwHWN9yKb1dp6HCo84H1sgCH6zU",
+    authDomain: "eng-bandar.firebaseapp.com",
+    projectId: "eng-bandar",
+    storageBucket: "eng-bandar.firebasestorage.app",
+    messagingSenderId: "988461507406",
+    appId: "1:988461507406:web:781ce1493b985699eb741f",
+    measurementId: "G-PE05PGW47E"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const docRef = doc(db, "content_studio", "main");
+
+  window.__fsGetDoc = async function(){
+    const snap = await getDoc(docRef);
+    return snap.exists() ? snap.data() : null;
+  };
+  window.__fsSetDoc = async function(data){
+    await setDoc(docRef, data);
+  };
+
+  window.__firebaseReadyResolve();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
@@ -687,22 +756,24 @@ function withTimeout(promise, ms){
   });
 }
 
-async function cloudFetch(){
+async function firestoreFetch(){
+  await withTimeout(window.__firebaseReadyPromise, 10000);
+  const data = await withTimeout(window.__fsGetDoc(), 10000);
+  return data || { items: [] };
+}
+
+async function firestorePersist(doc){
+  await withTimeout(window.__firebaseReadyPromise, 10000);
+  await withTimeout(window.__fsSetDoc(doc), 10000);
+}
+
+async function jsonbinFetch(){
   const res = await withTimeout(fetch(JSONBIN_URL + '/latest', {
     method: 'GET',
     headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }
   }), 10000);
-  if(!res.ok) throw new Error('cloud fetch failed: HTTP ' + res.status);
+  if(!res.ok) throw new Error('jsonbin fetch failed: HTTP ' + res.status);
   return await res.json();
-}
-
-async function cloudPersist(doc){
-  const res = await withTimeout(fetch(JSONBIN_URL, {
-    method: 'PUT',
-    headers: { 'X-Master-Key': JSONBIN_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify(doc)
-  }), 10000);
-  if(!res.ok) throw new Error('cloud save failed: HTTP ' + res.status);
 }
 
 function migratePlatformField(items){
@@ -722,9 +793,9 @@ function migratePlatformField(items){
 async function loadItems(){
   let cloudDoc = null;
   try{
-    cloudDoc = await cloudFetch();
+    cloudDoc = await firestoreFetch();
   }catch(err){
-    showToast('تعذر الاتصال بالتخزين السحابي، تحقق من الإنترنت', 'error', true);
+    showToast('تعذر الاتصال بقاعدة البيانات، تحقق من الإنترنت', 'error', true);
     state.items = [];
     return;
   }
@@ -736,9 +807,23 @@ async function loadItems(){
   let suggestedTitlesAdded = !!cloudDoc.suggestedTitlesAdded;
   let bridged = false;
 
-  // one-time bridge: if the cloud bin is still empty and we're running inside Claude's
-  // own preview (window.storage available there), pull over whatever was saved before
-  // so nothing gets lost when switching this device/browser to the shared cloud bin.
+  // one-time bridge #1: Firestore is still empty -> pull over whatever was saved
+  // earlier in JSONBin (the previous cloud backend), so nothing gets lost.
+  if(state.items.length === 0 && !cloudDoc.seeded){
+    try{
+      const jsonbinDoc = await jsonbinFetch();
+      if(jsonbinDoc && Array.isArray(jsonbinDoc.items) && jsonbinDoc.items.length > 0){
+        state.items = migratePlatformField(jsonbinDoc.items);
+        if(jsonbinDoc.suggestedTitlesAdded) suggestedTitlesAdded = true;
+        if(jsonbinDoc.prompterSettings) state.prompterSettings = jsonbinDoc.prompterSettings;
+        bridged = true;
+        needsPersist = true;
+      }
+    }catch(e){ /* JSONBin unreachable or empty - nothing to bridge from there */ }
+  }
+
+  // one-time bridge #2: still empty -> fall back to the even older window.storage
+  // (only present when running inside Claude's own preview).
   if(state.items.length === 0 && !cloudDoc.seeded && typeof window.storage !== 'undefined'){
     try{
       const legacyRes = await withTimeout(window.storage.get(STORAGE_KEY, false));
@@ -794,13 +879,13 @@ async function loadItems(){
   if(needsPersist || !cloudDoc.seeded){
     await persistAll();
   }
-  if(bridged) showToast('تم نقل بياناتك السابقة إلى التخزين السحابي ✓', 'success');
+  if(bridged) showToast('تم نقل بياناتك السابقة إلى Firebase ✓', 'success');
   if(addedCount > 0) showToast('تمت إضافة ' + addedCount + ' عنوان جديد كمسودات ✓', 'success');
 }
 
 async function persistAll(){
   try{
-    await cloudPersist({
+    await firestorePersist({
       items: state.items,
       seeded: true,
       suggestedTitlesAdded: true,
@@ -808,7 +893,7 @@ async function persistAll(){
     });
     return true;
   }catch(err){
-    showToast('فشل الحفظ على التخزين السحابي، حاول مرة أخرى', 'error', true);
+    showToast('فشل الحفظ على قاعدة البيانات، حاول مرة أخرى', 'error', true);
     return false;
   }
 }
@@ -861,12 +946,32 @@ function isSameDay(a,b){
 }
 function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
 
+function isOverdue(it){
+  return it.status === 'scheduled' && !!it.publishDate && new Date(it.publishDate).getTime() < Date.now();
+}
+function arabicCount(n, singular, dual, plural){
+  if(n === 1) return singular;
+  if(n === 2) return dual;
+  return n + ' ' + plural;
+}
+function overdueLabel(it){
+  const diffMs = Date.now() - new Date(it.publishDate).getTime();
+  const days = Math.floor(diffMs / 86400000);
+  if(days >= 1) return '⚠️ متأخر ' + arabicCount(days, 'يوم واحد', 'يومين', 'أيام');
+  const hours = Math.max(1, Math.floor(diffMs / 3600000));
+  return '⚠️ متأخر ' + arabicCount(hours, 'ساعة واحدة', 'ساعتين', 'ساعات');
+}
+
 /* ===================== Derived data ===================== */
 function filteredItems(){
   const f = state.filters;
   let arr = state.items.filter(function(it){
     if(f.platform !== 'all' && (!it.platforms || it.platforms.indexOf(f.platform) === -1)) return false;
-    if(f.status !== 'all' && it.status !== f.status) return false;
+    if(f.status === 'overdue'){
+      if(!isOverdue(it)) return false;
+    }else if(f.status !== 'all' && it.status !== f.status){
+      return false;
+    }
     if(f.search){
       const q = f.search.toLowerCase();
       const hay = (it.title + ' ' + it.content).toLowerCase();
@@ -897,14 +1002,15 @@ function computeStats(){
     const d = new Date(it.publishDate);
     return d >= now && d <= weekAhead;
   }).length;
-  return { total, byStatus, thisWeek };
+  const overdueCount = state.items.filter(isOverdue).length;
+  return { total, byStatus, thisWeek, overdueCount };
 }
 
-function hasDueToday(){
+function hasUrgentItems(){
   const today = startOfDay(new Date());
   return state.items.some(function(it){
     if(!it.publishDate || it.status !== 'scheduled') return false;
-    return isSameDay(startOfDay(new Date(it.publishDate)), today);
+    return isSameDay(startOfDay(new Date(it.publishDate)), today) || isOverdue(it);
   });
 }
 
@@ -922,9 +1028,11 @@ function renderStats(){
   row.innerHTML = chips.map(function(c){
     const active = (f===c.key) ? ' active' : '';
     return '<button class="stat-chip'+active+'" data-statkey="'+c.key+'"><b class="mono">'+c.val+'</b><span>'+c.label+'</span></button>';
-  }).join('') + '<button class="stat-chip" data-statkey="thisweek" style="cursor:default;"><b class="mono">'+s.thisWeek+'</b><span>هذا الأسبوع</span></button>';
+  }).join('')
+  + '<button class="stat-chip" data-statkey="thisweek" style="cursor:default;"><b class="mono">'+s.thisWeek+'</b><span>هذا الأسبوع</span></button>'
+  + '<button class="stat-chip'+(f==='overdue'?' active':'')+(s.overdueCount>0?' overdue-chip':'')+'" data-statkey="overdue"><b class="mono">'+s.overdueCount+'</b><span>متأخر</span></button>';
 
-  document.getElementById('liveDot').classList.toggle('live', hasDueToday());
+  document.getElementById('liveDot').classList.toggle('live', hasUrgentItems());
 }
 
 function renderViewTabs(){
@@ -961,6 +1069,7 @@ function render(){
 function cardHTML(it){
   const plats = (it.platforms && it.platforms.length) ? it.platforms : ['other'];
   const photo = PHOTO[it.photographyType];
+  const overdue = isOverdue(it);
   const dateLabel = it.publishDate ? fmtDateShort(it.publishDate) : 'بلا موعد محدد';
   const excerpt = (it.content||'').slice(0,140);
   const stripHTML = plats.map(function(p){ return '<div class="strip-seg" data-platform="'+p+'"></div>'; }).join('');
@@ -968,6 +1077,11 @@ function cardHTML(it){
     const pl = PLATFORMS[p] || PLATFORMS.other;
     return '<span class="tag platform">'+pl.emoji+' '+pl.label+'</span>';
   }).join('');
+  const statusTagHTML = overdue
+    ? '<span class="tag status-overdue">'+overdueLabel(it)+'</span>'
+    : '<span class="tag status-'+it.status+'">'+STATUS[it.status].emoji+' '+STATUS[it.status].label+'</span>';
+  const shootChipHTML = (it.photographyType==='professional' && it.shootDate)
+    ? '<span class="date-chip mono shoot">🎬 '+fmtDateShort(it.shootDate)+'</span>' : '';
   return ''+
   '<div class="slate-card" data-id="'+it.id+'">'+
     '<div class="slate-strip">'+stripHTML+'</div>'+
@@ -975,12 +1089,15 @@ function cardHTML(it){
       '<div class="tag-row">'+
         platformTags+
         (photo ? '<span class="tag">'+photo.emoji+' '+photo.label+'</span>' : '')+
-        '<span class="tag status-'+it.status+'">'+STATUS[it.status].emoji+' '+STATUS[it.status].label+'</span>'+
+        statusTagHTML+
       '</div>'+
       '<h4 class="slate-title">'+escapeHTML(it.title)+'</h4>'+
       '<p class="slate-excerpt">'+escapeHTML(excerpt)+'</p>'+
       '<div class="slate-foot">'+
-        '<span class="date-chip mono'+(it.publishDate?'':' no-date')+'">📅 '+dateLabel+'</span>'+
+        '<div class="date-stack">'+
+          shootChipHTML+
+          '<span class="date-chip mono'+(it.publishDate?'':' no-date')+(overdue?' overdue':'')+'">📅 '+dateLabel+'</span>'+
+        '</div>'+
         '<div class="card-actions">'+
           (it.status!=='published' ? '<button data-action="publish" data-id="'+it.id+'" title="تحديد كمنشور">✅</button>' : '')+
           '<button data-action="edit" data-id="'+it.id+'" title="تعديل">✏️</button>'+
@@ -1017,17 +1134,20 @@ function renderListView(){
 /* ===================== Board view ===================== */
 function miniCardHTML(it){
   const plats = (it.platforms && it.platforms.length) ? it.platforms : ['other'];
+  const overdue = isOverdue(it);
   const dateLabel = it.publishDate ? fmtDateShort(it.publishDate) : 'بلا موعد';
   const platformTags = plats.map(function(p){
     const pl = PLATFORMS[p] || PLATFORMS.other;
     return '<span class="tag platform">'+pl.emoji+' '+pl.label+'</span>';
   }).join('');
+  const shootChipHTML = (it.photographyType==='professional' && it.shootDate)
+    ? '<span class="date-chip mono shoot">🎬 '+fmtDateShort(it.shootDate)+'</span>' : '';
   return ''+
   '<div class="mini-card" data-id="'+it.id+'">'+
-    '<div class="tag-row">'+platformTags+'</div>'+
+    '<div class="tag-row">'+platformTags+(overdue ? '<span class="tag status-overdue">'+overdueLabel(it)+'</span>' : '')+'</div>'+
     '<div class="slate-title">'+escapeHTML(it.title)+'</div>'+
     '<div class="mini-card-foot">'+
-      '<span class="date-chip mono">📅 '+dateLabel+'</span>'+
+      '<div class="date-stack">'+shootChipHTML+'<span class="date-chip mono'+(overdue?' overdue':'')+'">📅 '+dateLabel+'</span></div>'+
       '<select class="status-select" data-action="movestatus" data-id="'+it.id+'">'+
         Object.keys(STATUS).map(function(k){ return '<option value="'+k+'"'+(k===it.status?' selected':'')+'>'+STATUS[k].emoji+' '+STATUS[k].label+'</option>'; }).join('')+
       '</select>'+
@@ -1081,6 +1201,9 @@ function renderCalendarView(){
       if(!it.publishDate) return false;
       return isSameDay(new Date(it.publishDate), cellDate);
     });
+    const shootItems = state.items.filter(function(it){
+      return it.photographyType==='professional' && it.shootDate && isSameDay(new Date(it.shootDate), cellDate);
+    });
     const isToday = isSameDay(cellDate, today);
     const allPlatformsToday = [];
     dayItems.forEach(function(it){ (it.platforms && it.platforms.length ? it.platforms : ['other']).forEach(function(p){ allPlatformsToday.push(p); }); });
@@ -1089,6 +1212,7 @@ function renderCalendarView(){
     }).join('');
     const more = allPlatformsToday.length > 4 ? '<span class="cal-more">+'+(allPlatformsToday.length-4)+'</span>' : '';
     cells += '<div class="cal-cell'+(isToday?' today':'')+'" data-action="calday" data-date="'+cellDate.toISOString()+'">'+
+      (shootItems.length ? '<span class="cal-shoot-flag" title="يوجد تصوير في هذا اليوم">🎬</span>' : '')+
       '<span class="cal-daynum mono">'+day+'</span>'+
       '<div class="cal-dots">'+dotsHTML+more+'</div>'+
     '</div>';
@@ -1101,8 +1225,10 @@ function renderCalendarView(){
   if(state.selectedDay){
     const sel = new Date(state.selectedDay);
     const dayItems = state.items.filter(function(it){ return it.publishDate && isSameDay(new Date(it.publishDate), sel); });
+    const shootItems = state.items.filter(function(it){ return it.photographyType==='professional' && it.shootDate && isSameDay(new Date(it.shootDate), sel); });
     panel = '<div class="day-panel"><h4>📅 '+ new Intl.DateTimeFormat(AR_LOCALE,{weekday:'long', day:'numeric', month:'long'}).format(sel) +'</h4>'+
       (dayItems.length ? '<div class="card-grid">'+dayItems.map(cardHTML).join('')+'</div>' : '<p style="color:var(--fog-dim); font-size:13px;">لا يوجد محتوى مجدول في هذا اليوم</p>')+
+      (shootItems.length ? '<h4 style="margin-top:18px;">🎬 تصوير في هذا اليوم</h4><div class="card-grid">'+shootItems.map(cardHTML).join('')+'</div>' : '')+
     '</div>';
   }
 
@@ -1170,6 +1296,7 @@ function openModal(itemId){
     document.getElementById('contentInput').value = it.content;
     document.getElementById('notesInput').value = it.notes || '';
     document.getElementById('dateInput').value = it.publishDate || '';
+    document.getElementById('shootDateInput').value = it.shootDate || '';
     state.formState = { platforms: (it.platforms||[]).slice(), photo: it.photographyType, status: it.status };
   }else{
     title.textContent = 'تسجيل محتوى جديد';
@@ -1177,14 +1304,20 @@ function openModal(itemId){
     document.getElementById('contentInput').value = '';
     document.getElementById('notesInput').value = '';
     document.getElementById('dateInput').value = '';
+    document.getElementById('shootDateInput').value = '';
     state.formState = { platforms: [], photo:'mobile', status:'scheduled' };
   }
   setChipGroup('platform', state.formState.platforms);
   setChipGroup('photo', state.formState.photo);
   setChipGroup('status', state.formState.status);
+  updateShootDateVisibility();
 
   overlay.classList.add('open');
   setTimeout(function(){ document.getElementById('titleInput').focus(); }, 150);
+}
+function updateShootDateVisibility(){
+  const show = state.formState.photo === 'professional';
+  document.getElementById('shootDateField').style.display = show ? '' : 'none';
 }
 function closeModal(){
   document.getElementById('formOverlay').classList.remove('open');
@@ -1218,6 +1351,7 @@ async function handleFormSubmit(e){
     content: content,
     platforms: state.formState.platforms.slice(),
     photographyType: state.formState.photo,
+    shootDate: state.formState.photo === 'professional' ? (document.getElementById('shootDateInput').value || null) : null,
     publishDate: document.getElementById('dateInput').value || null,
     status: state.formState.status,
     notes: document.getElementById('notesInput').value.trim()
@@ -1263,14 +1397,19 @@ function buildViewBodyHTML(it){
     const pl = PLATFORMS[p] || PLATFORMS.other;
     return '<span class="tag platform" style="font-size:12.5px; padding:5px 12px;">'+pl.emoji+' '+pl.label+'</span>';
   }).join('');
+  const overdue = isOverdue(it);
+  const statusTagHTML = overdue
+    ? '<span class="tag status-overdue" style="font-size:12.5px; padding:5px 12px;">'+overdueLabel(it)+'</span>'
+    : '<span class="tag status-'+it.status+'" style="font-size:12.5px; padding:5px 12px;">'+STATUS[it.status].emoji+' '+STATUS[it.status].label+'</span>';
   return ''+
   '<div class="tag-row" style="margin-bottom:14px;">'+
     platformTags+
     (photo ? '<span class="tag" style="font-size:12.5px; padding:5px 12px;">'+photo.emoji+' '+photo.label+'</span>' : '')+
-    '<span class="tag status-'+it.status+'" style="font-size:12.5px; padding:5px 12px;">'+STATUS[it.status].emoji+' '+STATUS[it.status].label+'</span>'+
+    statusTagHTML+
   '</div>'+
   '<h2 class="view-title">'+escapeHTML(it.title)+'</h2>'+
-  (it.publishDate ? '<div class="view-date">📅 '+fmtDateLong(it.publishDate)+'</div>' : '<div class="view-date no-date">📅 بلا موعد محدد</div>')+
+  (it.photographyType==='professional' && it.shootDate ? '<div class="view-date" style="color:#a48cff;">🎬 موعد التصوير: '+fmtDateLong(it.shootDate)+'</div>' : '')+
+  (it.publishDate ? '<div class="view-date'+(overdue?' overdue':'')+'">📅 موعد النشر: '+fmtDateLong(it.publishDate)+'</div>' : '<div class="view-date no-date">📅 بلا موعد نشر محدد</div>')+
   '<div class="view-section">'+
     '<div class="view-label">محتوى الكلام</div>'+
     '<div class="view-content-box">'+escapeHTML(it.content || '—')+'</div>'+
@@ -1410,8 +1549,9 @@ async function exportToExcel(){
       'محتوى الكلام': it.content,
       'مكان النشر': (it.platforms||[]).map(function(p){ return PLATFORMS[p] ? PLATFORMS[p].label : p; }).join('، '),
       'نوع التصوير': PHOTO[it.photographyType] ? PHOTO[it.photographyType].label : '',
+      'موعد التصوير': (it.photographyType==='professional' && it.shootDate) ? fmtDateLong(it.shootDate) : '',
       'موعد النشر': it.publishDate ? fmtDateLong(it.publishDate) : '',
-      'الحالة': STATUS[it.status] ? STATUS[it.status].label : it.status,
+      'الحالة': isOverdue(it) ? 'متأخر' : (STATUS[it.status] ? STATUS[it.status].label : it.status),
       'ملاحظات': it.notes || ''
     };
   });
@@ -1491,6 +1631,7 @@ function wireEvents(){
       }else{
         state.formState[group] = chip.dataset.value;
         setChipGroup(group, chip.dataset.value);
+        if(group === 'photo') updateShootDateVisibility();
       }
     });
   });
