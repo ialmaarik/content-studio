@@ -32,7 +32,7 @@
 }
 
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
+html,body{margin:0;padding:0; overflow-x:hidden; width:100%; max-width:100%;}
 body{
   background:
     radial-gradient(circle at 12% 0%, rgba(255,91,54,.08), transparent 45%),
@@ -387,6 +387,7 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
   transition:opacity .2s ease;
 }
 .prompter-overlay.open{opacity:1; pointer-events:auto;}
+.prompter-overlay.mirrored .prompter-scroll{transform:scaleX(-1);}
 .prompter-bar{
   flex:none; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
   padding:10px 16px; padding-top:max(10px, env(safe-area-inset-top, 0px));
@@ -399,6 +400,7 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
   display:flex; align-items:center; justify-content:center;
 }
 .prompter-btn:hover{background:rgba(255,255,255,.18);}
+.prompter-btn.active-btn{background:rgba(255,91,54,.35); border-color:var(--ember);}
 .prompter-control{display:flex; align-items:center; gap:6px;}
 .prompter-control label{font-size:11px; color:rgba(255,255,255,.65); white-space:nowrap;}
 .prompter-control input[type=range]{width:84px; accent-color:var(--ember);}
@@ -406,9 +408,16 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
   width:32px; height:32px; border:1px solid rgba(255,255,255,.25); border-radius:8px;
   background:none; cursor:pointer; padding:0;
 }
-.prompter-scroll{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.prompter-scroll-wrap{flex:1; position:relative; overflow:hidden;}
+.prompter-reading-line{
+  position:absolute; top:50%; left:0; right:0; height:3px;
+  background:rgba(255,91,54,.75); z-index:3; pointer-events:none;
+  box-shadow:0 0 12px rgba(255,91,54,.6);
+  transform:translateY(-50%);
+}
+.prompter-scroll{height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch;}
 .prompter-text{
-  max-width:900px; margin:0 auto; padding:55vh 28px; text-align:center;
+  max-width:900px; margin:0 auto; padding:50vh 28px; text-align:center;
   line-height:1.9; font-weight:600; white-space:pre-wrap; word-break:break-word;
   font-family:"IBM Plex Sans Arabic",sans-serif; transition:color .15s ease;
 }
@@ -607,6 +616,7 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
     <button class="prompter-btn" id="prompterCloseBtn" title="إغلاق" aria-label="إغلاق">✕</button>
     <button class="prompter-btn" id="prompterPlayBtn" title="تشغيل / إيقاف" aria-label="تشغيل أو إيقاف التمرير">▶️</button>
     <button class="prompter-btn" id="prompterResetBtn" title="رجوع للأعلى" aria-label="رجوع للأعلى">⤴</button>
+    <button class="prompter-btn" id="prompterMirrorBtn" title="وضع الانعكاس" aria-label="تبديل وضع الانعكاس">🪞</button>
     <div class="prompter-control">
       <label for="prompterSpeed">السرعة</label>
       <input type="range" id="prompterSpeed" min="10" max="220" step="5">
@@ -620,8 +630,11 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
       <input type="color" id="prompterColor">
     </div>
   </div>
-  <div class="prompter-scroll" id="prompterScroll">
-    <div class="prompter-text" id="prompterText"></div>
+  <div class="prompter-scroll-wrap">
+    <div class="prompter-reading-line" id="prompterReadingLine"></div>
+    <div class="prompter-scroll" id="prompterScroll">
+      <div class="prompter-text" id="prompterText"></div>
+    </div>
   </div>
 </div>
 
@@ -743,6 +756,7 @@ let prompterPlaying = false;
 let prompterRAF = null;
 let prompterLastTs = null;
 let prompterSpeedPxPerSec = 40;
+let prompterMirrored = false;
 
 /* ===================== Storage helpers ===================== */
 function withTimeout(promise, ms){
@@ -1447,6 +1461,14 @@ function contrastTextColor(hex){
 function applyPrompterBg(hex){
   document.getElementById('prompterOverlay').style.background = hex;
   document.getElementById('prompterText').style.color = contrastTextColor(hex);
+  // keep reading line visible against any background
+  const lum = parseInt(hex.replace('#','').substr(0,2),16)*0.299 + parseInt(hex.replace('#','').substr(2,2),16)*0.587 + parseInt(hex.replace('#','').substr(4,2),16)*0.114;
+  document.getElementById('prompterReadingLine').style.background = lum > 140 ? 'rgba(255,50,0,.85)' : 'rgba(255,91,54,.85)';
+}
+function applyPrompterMirror(on){
+  prompterMirrored = on;
+  document.getElementById('prompterOverlay').classList.toggle('mirrored', on);
+  document.getElementById('prompterMirrorBtn').classList.toggle('active-btn', on);
 }
 function updatePrompterPlayBtn(){
   document.getElementById('prompterPlayBtn').textContent = prompterPlaying ? '⏸️' : '▶️';
@@ -1485,7 +1507,8 @@ async function savePrompterSettings(){
   state.prompterSettings = {
     bg: document.getElementById('prompterColor').value,
     size: document.getElementById('prompterSize').value,
-    speed: document.getElementById('prompterSpeed').value
+    speed: document.getElementById('prompterSpeed').value,
+    mirror: prompterMirrored
   };
   await persistAll();
 }
@@ -1499,7 +1522,7 @@ async function openPrompter(content){
   if(prompterRAF){ cancelAnimationFrame(prompterRAF); prompterRAF = null; }
   updatePrompterPlayBtn();
 
-  const settings = Object.assign({ bg:'#000000', size:'30', speed:'40' }, state.prompterSettings || {});
+  const settings = Object.assign({ bg:'#000000', size:'30', speed:'40', mirror:false }, state.prompterSettings || {});
 
   document.getElementById('prompterColor').value = settings.bg;
   document.getElementById('prompterSize').value = settings.size;
@@ -1507,6 +1530,7 @@ async function openPrompter(content){
   document.getElementById('prompterText').style.fontSize = settings.size + 'px';
   prompterSpeedPxPerSec = Number(settings.speed);
   applyPrompterBg(settings.bg);
+  applyPrompterMirror(!!settings.mirror);
 
   document.getElementById('prompterOverlay').classList.add('open');
   try{
@@ -1599,6 +1623,10 @@ function wireEvents(){
   document.getElementById('prompterResetBtn').addEventListener('click', function(){
     document.getElementById('prompterScroll').scrollTop = 0;
   });
+  document.getElementById('prompterMirrorBtn').addEventListener('click', function(){
+    applyPrompterMirror(!prompterMirrored);
+    savePrompterSettings();
+  });
   document.getElementById('prompterSpeed').addEventListener('input', function(e){
     prompterSpeedPxPerSec = Number(e.target.value);
     savePrompterSettings();
@@ -1615,6 +1643,7 @@ function wireEvents(){
   document.addEventListener('keydown', function(e){
     if(!document.getElementById('prompterOverlay').classList.contains('open')) return;
     if(e.code === 'Space'){ e.preventDefault(); togglePrompterPlay(); }
+    if(e.code === 'KeyM'){ applyPrompterMirror(!prompterMirrored); savePrompterSettings(); }
     if(e.code === 'Escape'){ closePrompter(); }
   });
 
