@@ -1314,6 +1314,10 @@ function openModal(itemId){
     title.textContent = 'تعديل المحتوى';
     document.getElementById('titleInput').value = it.title;
     document.getElementById('contentInput').value = it.content;
+    // force the textarea to resize to fit the existing content
+    const ta = document.getElementById('contentInput');
+    ta.style.height = 'auto';
+    ta.style.height = Math.max(160, ta.scrollHeight) + 'px';
     document.getElementById('notesInput').value = it.notes || '';
     document.getElementById('dateInput').value = it.publishDate || '';
     document.getElementById('shootDateInput').value = it.shootDate || '';
@@ -1322,6 +1326,7 @@ function openModal(itemId){
     title.textContent = 'تسجيل محتوى جديد';
     document.getElementById('titleInput').value = '';
     document.getElementById('contentInput').value = '';
+    document.getElementById('contentInput').style.height = '160px';
     document.getElementById('notesInput').value = '';
     document.getElementById('dateInput').value = '';
     document.getElementById('shootDateInput').value = '';
@@ -1611,6 +1616,10 @@ function wireEvents(){
   document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
   document.getElementById('formOverlay').addEventListener('click', function(e){ if(e.target.id==='formOverlay') closeModal(); });
   document.getElementById('itemForm').addEventListener('submit', handleFormSubmit);
+  document.getElementById('contentInput').addEventListener('input', function(){
+    this.style.height = 'auto';
+    this.style.height = Math.max(160, this.scrollHeight) + 'px';
+  });
 
   document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmDelete);
   document.getElementById('confirmDeleteBtn').addEventListener('click', performDelete);
