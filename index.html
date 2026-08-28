@@ -625,7 +625,7 @@ main{max-width:1180px; margin:0 auto; padding:18px; padding-bottom:120px;}
     <button class="prompter-btn" id="prompterMirrorBtn" title="وضع الانعكاس" aria-label="تبديل وضع الانعكاس">🪞</button>
     <div class="prompter-control">
       <label for="prompterSpeed">السرعة</label>
-      <input type="range" id="prompterSpeed" min="10" max="220" step="5">
+      <input type="range" id="prompterSpeed" min="2" max="220" step="1">
     </div>
     <div class="prompter-control">
       <label for="prompterSize">حجم النص</label>
@@ -1533,7 +1533,7 @@ async function openPrompter(content){
   if(prompterRAF){ cancelAnimationFrame(prompterRAF); prompterRAF = null; }
   updatePrompterPlayBtn();
 
-  const settings = Object.assign({ bg:'#000000', size:'30', speed:'40', mirror:false }, state.prompterSettings || {});
+  const settings = Object.assign({ bg:'#000000', size:'30', speed:'20', mirror:false }, state.prompterSettings || {});
 
   document.getElementById('prompterColor').value = settings.bg;
   document.getElementById('prompterSize').value = settings.size;
